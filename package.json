@@ -13,8 +13,7 @@
     "app": "electron .",
     "dist": "vite build && electron-builder --win",
     "dist:win": "vite build && electron-builder --win",
-    "dist:linux": "vite build && electron-builder --linux",
-    "dist:linux-installers": "vite build && electron-builder --linux AppImage deb tar.gz"
+    "dist:linux": "vite build && electron-builder --linux"
   },
   "build": {
     "appId": "com.localnotes.app",
@@ -32,6 +31,8 @@
     },
     "linux": {
       "target": [
+        "deb",
+        "AppImage",
         "tar.gz"
       ],
       "category": "Office",
