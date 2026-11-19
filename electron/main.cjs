@@ -137,6 +137,7 @@ function registerIpc() {
 
   ipcMain.handle('item:rename', async (_e, p, newName) => {
     const abs = inVault(p);
+    if (!fs.existsSync(abs)) return abs;
     const isFile = (await fsp.stat(abs)).isFile();
     const isMd = isFile && /\.md$/i.test(abs);
     const clean = sanitizeName(isMd ? String(newName).replace(/\.md$/i, '') : newName);
@@ -150,7 +151,7 @@ function registerIpc() {
       return target;
     }
     if (target === abs) return abs;
-    if (fs.existsSync(target)) throw new Error('An item with that name already exists');
+    if (fs.existsSync(target)) return abs;
     await fsp.rename(abs, target);
     return target;
   });

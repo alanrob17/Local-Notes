@@ -206,11 +206,12 @@ function RenameInput({ initial, onDone }) {
       className="tree-rename"
       value={v}
       onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
       onChange={(e) => setV(e.target.value)}
       onBlur={() => finish(v.trim())}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') finish(v.trim());
-        if (e.key === 'Escape') finish(null);
+        if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); finish(v.trim()); }
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(null); }
       }}
     />
   );

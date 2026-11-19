@@ -73,6 +73,7 @@ function NoteEditor({ path, initialText, markdownMode, onOpenTarget, onOpenPath,
   const prevModeRef = useRef(markdownMode);
   const rawDirtyRef = useRef(false);
   const rawSavedSinceCleanRef = useRef(false);
+  const renamingRef = useRef(false);
   const [title, setTitle] = useState(noteName(path));
   const [props, setProps] = useState(parseProperties(initialSplit.frontmatter));
   const [rawText, setRawText] = useState(() => initialText.replace(/\r\n/g, '\n'));
@@ -368,18 +369,21 @@ function NoteEditor({ path, initialText, markdownMode, onOpenTarget, onOpenPath,
   }, [editor, initialText]);
 
   const commitTitle = async () => {
+    if (renamingRef.current) return;
     const clean = title.replace(/[\\/:*?"<>|]/g, '').replace(/\.md$/i, '').trim();
     const current = noteName(pathRef.current);
     if (!clean) { setTitle(current); return; }
     if (clean === current) return;
-    if (timerRef.current || (modeRef.current && rawDirtyRef.current)) await save();
+    renamingRef.current = true;
     try {
+      if (timerRef.current || (modeRef.current && rawDirtyRef.current)) await save();
       const newPath = await api.rename(pathRef.current, clean);
       pathRef.current = newPath;
       onRenamed(newPath);
     } catch (e) {
-      setTitle(current);
-      alert(e.message || String(e));
+      setTitle(noteName(pathRef.current));
+    } finally {
+      renamingRef.current = false;
     }
   };
 

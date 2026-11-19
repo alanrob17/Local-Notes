@@ -133,7 +133,7 @@ export default function App() {
         if (moved !== cur.path) openPath(moved, { keepKey: true });
       }
       await refreshTree();
-    } catch (e) { alert(e.message || String(e)); }
+    } catch (e) { console.warn(e); }
   };
 
   const move = async (src, destDir) => {
