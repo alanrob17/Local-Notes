@@ -9,7 +9,7 @@ npm install      # first time only
 npm start        # builds the UI and launches the app
 ```
 
-`npm run app` launches without rebuilding. `npm run dist` builds a Windows installer into `release/` via electron-builder.
+`npm run app` launches without rebuilding. `npm run dist` (or `npm run dist:win`) builds a Windows installer into `release/`. `npm run dist:linux` builds a portable Linux archive (`release/local-notes-1.0.0.tar.gz` and `release/linux-unpacked/`) directly from Windows or Linux. On a Linux machine or inside WSL2, `npm run dist:linux-installers` also builds `.AppImage` and `.deb` installers.
 
 ## Features
 

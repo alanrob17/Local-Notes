@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
 import QuickSwitcher from './components/QuickSwitcher';
 import { Icon } from './components/Icons';
-import { vaultIndex, flattenTree, resolveNote, relPath, dirname } from './lib/vault';
+import { vaultIndex, flattenTree, resolveNote, relPath, dirname, joinPath } from './lib/vault';
 
 const api = window.api;
 const THEMES = ['system', 'light', 'dark'];
@@ -118,7 +118,7 @@ export default function App() {
     const name = parts.pop();
     let dir = vaultIndex.root;
     if (parts.length) {
-      const candidate = vaultIndex.root + '\\' + parts.join('\\');
+      const candidate = joinPath(vaultIndex.root, parts.join('/'));
       if (await api.stat(candidate)) dir = candidate;
     }
     await newNote(dir, name);
@@ -204,7 +204,7 @@ export default function App() {
   const crumbs = current ? relPath(vault.path, current.path).replace(/\.md$/i, '').split(/[\\/]/) : [];
 
   return (
-    <div className="app">
+    <div className={`app${api.platform === 'linux' ? ' platform-linux' : ''}`}>
       {sidebarOpen && (
         <Sidebar
           vault={vault}

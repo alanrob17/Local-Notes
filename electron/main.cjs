@@ -57,16 +57,17 @@ async function readTree(dir) {
 function startWatching() {
   if (watcher) { try { watcher.close(); } catch {} watcher = null; }
   if (!vaultPath) return;
+  const onWatch = (_evt, filename) => {
+    if (filename && filename.split(/[\\/]/).some((p) => IGNORED.has(p))) return;
+    clearTimeout(watchTimer);
+    watchTimer = setTimeout(() => {
+      if (win && !win.isDestroyed()) win.webContents.send('vault:changed', filename ? path.join(vaultPath, filename) : null);
+    }, 250);
+  };
   try {
-    watcher = fs.watch(vaultPath, { recursive: true }, (_evt, filename) => {
-      if (filename && filename.split(/[\\/]/).some((p) => IGNORED.has(p))) return;
-      clearTimeout(watchTimer);
-      watchTimer = setTimeout(() => {
-        if (win && !win.isDestroyed()) win.webContents.send('vault:changed', filename ? path.join(vaultPath, filename) : null);
-      }, 250);
-    });
-  } catch (e) {
-    console.error('watch failed', e);
+    watcher = fs.watch(vaultPath, { recursive: true }, onWatch);
+  } catch {
+    try { watcher = fs.watch(vaultPath, onWatch); } catch (e) { console.error('watch failed', e); }
   }
 }
 
@@ -168,7 +169,12 @@ function registerIpc() {
   });
 
   ipcMain.handle('item:delete', async (_e, p) => {
-    await shell.trashItem(inVault(p));
+    const target = inVault(p);
+    try {
+      await shell.trashItem(target);
+    } catch {
+      await fsp.rm(target, { recursive: true, force: true });
+    }
     return true;
   });
 
@@ -239,6 +245,7 @@ protocol.registerSchemesAsPrivileged([
 
 function createWindow() {
   const dark = nativeTheme.shouldUseDarkColors;
+  const isLinux = process.platform === 'linux';
   win = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -246,12 +253,16 @@ function createWindow() {
     minHeight: 480,
     title: 'Local Notes',
     backgroundColor: dark ? '#191919' : '#ffffff',
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: '#00000000',
-      symbolColor: dark ? '#cfcfcf' : '#37352f',
-      height: 40,
-    },
+    ...(isLinux
+      ? { autoHideMenuBar: true }
+      : {
+          titleBarStyle: 'hidden',
+          titleBarOverlay: {
+            color: '#00000000',
+            symbolColor: dark ? '#cfcfcf' : '#37352f',
+            height: 40,
+          },
+        }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -263,7 +274,9 @@ function createWindow() {
   nativeTheme.on('updated', () => {
     if (!win || win.isDestroyed()) return;
     const d = nativeTheme.shouldUseDarkColors;
-    try { win.setTitleBarOverlay({ color: '#00000000', symbolColor: d ? '#cfcfcf' : '#37352f', height: 40 }); } catch {}
+    if (!isLinux) {
+      try { win.setTitleBarOverlay({ color: '#00000000', symbolColor: d ? '#cfcfcf' : '#37352f', height: 40 }); } catch {}
+    }
     win.setBackgroundColor(d ? '#191919' : '#ffffff');
   });
 
@@ -291,7 +304,8 @@ app.whenReady().then(() => {
   protocol.handle('vault', (request) => {
     try {
       const u = new URL(request.url);
-      const abs = decodeURIComponent(u.pathname.slice(1));
+      let abs = decodeURIComponent(u.pathname.slice(1));
+      if (process.platform !== 'win32' && !abs.startsWith('/')) abs = '/' + abs;
       const safe = inVault(abs);
       return net.fetch(pathToFileURL(safe).toString());
     } catch {

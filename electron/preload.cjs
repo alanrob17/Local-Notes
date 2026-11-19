@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
+  platform: process.platform,
   getLastVault: () => ipcRenderer.invoke('vault:getLast'),
   selectVault: () => ipcRenderer.invoke('vault:select'),
   getTree: () => ipcRenderer.invoke('vault:tree'),

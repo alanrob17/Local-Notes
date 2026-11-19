@@ -18,13 +18,14 @@ export function basename(p) {
 }
 export function joinPath(dir, rel) {
   const s = sep(dir);
-  const parts = dir.split(/[\\/]/);
+  const leadingSlash = dir.startsWith('/') ? '/' : '';
+  const parts = dir.split(/[\\/]/).filter(Boolean);
   for (const seg of rel.split(/[\\/]/)) {
     if (!seg || seg === '.') continue;
     if (seg === '..') parts.pop();
     else parts.push(seg);
   }
-  return parts.join(s);
+  return leadingSlash + parts.join(s);
 }
 export function relPath(root, p) {
   if (!root) return p;
@@ -79,7 +80,7 @@ export function resolveRelative(src) {
   if (!src || /^(https?:|data:|vault:|mailto:)/i.test(src)) return src;
   let decoded = src;
   try { decoded = decodeURIComponent(src); } catch {}
-  if (/^[a-zA-Z]:[\\/]/.test(decoded)) return decoded; // absolute windows path
+  if (/^[a-zA-Z]:[\\/]/.test(decoded) || decoded.startsWith('/')) return decoded; // absolute windows or posix path
   const base = vaultIndex.currentNotePath ? dirname(vaultIndex.currentNotePath) : vaultIndex.root;
   return joinPath(base, decoded);
 }
