@@ -235,6 +235,16 @@ function registerIpc() {
     saveSettings({ theme: mode });
     return true;
   });
+  ipcMain.handle('spellcheck:set', async (_e, enabled) => {
+    const on = Boolean(enabled);
+    // Always keep Chromium's spellchecker engine enabled so markers aren't wiped;
+    // the renderer hides/shows the red wavy lines instantly via ::spelling-error CSS.
+    if (win && !win.isDestroyed()) {
+      try { win.webContents.session.setSpellCheckerEnabled(true); } catch {}
+    }
+    saveSettings({ spellcheck: on });
+    return on;
+  });
   ipcMain.handle('settings:get', async () => loadSettings());
 }
 
@@ -268,8 +278,12 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      spellcheck: true,
     },
   });
+
+  // Ensure Chromium's spellcheck engine is always active (even if a prior build disabled it).
+  try { win.webContents.session.setSpellCheckerEnabled(true); } catch {}
 
   nativeTheme.on('updated', () => {
     if (!win || win.isDestroyed()) return;

@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('api', {
   search: (q) => ipcRenderer.invoke('search:content', q),
   openExternal: (u) => ipcRenderer.invoke('shell:openExternal', u),
   setTheme: (m) => ipcRenderer.invoke('theme:set', m),
+  setSpellcheck: (enabled) => ipcRenderer.invoke('spellcheck:set', enabled),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   onVaultChanged: (cb) => {
     const fn = (_e, p) => cb(p);

@@ -315,6 +315,12 @@ kbd {
   caret-color: var(--text);
   word-wrap: break-word;
 }
+.spellcheck-off ::spelling-error,
+.spellcheck-off ::grammar-error {
+  text-decoration: none;
+  text-decoration-line: none;
+  text-decoration-color: transparent;
+}
 .prose > * + * { margin-top: 2px; }
 .prose p { margin: 0; padding: 3px 2px; min-height: 1.6em; }
 .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 { font-weight: 600; margin: 0; padding: 3px 2px; line-height: 1.3; }

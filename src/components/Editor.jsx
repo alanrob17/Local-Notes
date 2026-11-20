@@ -27,7 +27,7 @@ function noteName(p) {
   return basename(p).replace(/\.md$/i, '');
 }
 
-export default function Editor({ path, markdownMode, onOpenTarget, onOpenPath, onRenamed, onStatus }) {
+export default function Editor({ path, markdownMode, spellcheck = true, onOpenTarget, onOpenPath, onRenamed, onStatus }) {
   const [initial, setInitial] = useState(null);
   const [error, setError] = useState(null);
 
@@ -51,6 +51,7 @@ export default function Editor({ path, markdownMode, onOpenTarget, onOpenPath, o
       path={path}
       initialText={initial}
       markdownMode={markdownMode}
+      spellcheck={spellcheck}
       onOpenTarget={onOpenTarget}
       onOpenPath={onOpenPath}
       onRenamed={onRenamed}
@@ -59,7 +60,7 @@ export default function Editor({ path, markdownMode, onOpenTarget, onOpenPath, o
   );
 }
 
-function NoteEditor({ path, initialText, markdownMode, onOpenTarget, onOpenPath, onRenamed, onStatus }) {
+function NoteEditor({ path, initialText, markdownMode, spellcheck = true, onOpenTarget, onOpenPath, onRenamed, onStatus }) {
   const pathRef = useRef(path);
   pathRef.current = path;
   vaultIndex.currentNotePath = path;
@@ -195,7 +196,7 @@ function NoteEditor({ path, initialText, markdownMode, onOpenTarget, onOpenPath,
       }),
     ],
     content: initialSplit.body,
-    autofocus: initialText.trim() === '' ? false : false,
+    autofocus: false,
     editorProps: {
       attributes: { class: 'prose', spellcheck: 'true' },
       handleClick(view, pos, event) {
@@ -249,6 +250,19 @@ function NoteEditor({ path, initialText, markdownMode, onOpenTarget, onOpenPath,
   });
   editorRef.current = editor;
   window.__lnEditor = editor;
+
+  // Ensure Chromium runs its initial spellcheck pass on the document when opened or toggled on.
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    editor.view.dom.setAttribute('spellcheck', 'true');
+    if (initialText.trim() !== '' && spellcheck && !markdownMode) {
+      requestAnimationFrame(() => {
+        if (!editor.isDestroyed && document.activeElement !== titleRef.current) {
+          editor.view.dom.focus({ preventScroll: true });
+        }
+      });
+    }
+  }, [editor, spellcheck, markdownMode, initialText]);
 
   const insertImageToRaw = useCallback(async (files) => {
     for (const file of files) {

@@ -23,6 +23,7 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem('sidebarOpen') !== '0');
   const [sidebarWidth, setSidebarWidth] = useState(() => Number(localStorage.getItem('sidebarWidth')) || 260);
   const [markdownMode, setMarkdownMode] = useState(() => localStorage.getItem('markdownMode') === '1');
+  const [spellcheck, setSpellcheck] = useState(() => localStorage.getItem('spellcheck') !== '0');
   const [switcher, setSwitcher] = useState(false);
   const [theme, setTheme] = useState('system');
   const [recent, setRecent] = useState([]);
@@ -31,13 +32,20 @@ export default function App() {
 
   // ----- boot -----
   useEffect(() => {
-    api.getSettings().then((s) => s.theme && setTheme(s.theme));
+    api.getSettings().then((s) => {
+      if (s.theme) setTheme(s.theme);
+      if (typeof s.spellcheck === 'boolean') setSpellcheck(s.spellcheck);
+    });
     api.getLastVault().then((v) => setVault(v || null));
   }, []);
 
   useEffect(() => localStorage.setItem('sidebarOpen', sidebarOpen ? '1' : '0'), [sidebarOpen]);
   useEffect(() => localStorage.setItem('sidebarWidth', String(sidebarWidth)), [sidebarWidth]);
   useEffect(() => localStorage.setItem('markdownMode', markdownMode ? '1' : '0'), [markdownMode]);
+  useEffect(() => {
+    localStorage.setItem('spellcheck', spellcheck ? '1' : '0');
+    api.setSpellcheck?.(spellcheck);
+  }, [spellcheck]);
 
   const refreshTree = useCallback(async () => {
     const t = await api.getTree();
@@ -192,6 +200,7 @@ export default function App() {
       else if (k === 'n') { e.preventDefault(); newNote(vaultIndex.root); }
       else if (k === '\\') { e.preventDefault(); setSidebarOpen((s) => !s); }
       else if (k === 'e' && !e.shiftKey && !e.altKey) { e.preventDefault(); setMarkdownMode((m) => !m); }
+      else if (k === 'v' && e.shiftKey && !e.altKey) { e.preventDefault(); e.stopPropagation(); setSpellcheck((s) => !s); }
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
@@ -204,7 +213,7 @@ export default function App() {
   const crumbs = current ? relPath(vault.path, current.path).replace(/\.md$/i, '').split(/[\\/]/) : [];
 
   return (
-    <div className={`app${api.platform === 'linux' ? ' platform-linux' : ''}`}>
+    <div className={`app${api.platform === 'linux' ? ' platform-linux' : ''}${spellcheck ? '' : ' spellcheck-off'}`}>
       {sidebarOpen && (
         <Sidebar
           vault={vault}
@@ -257,6 +266,14 @@ export default function App() {
                   : 'Saved'}
               </span>
               <button
+                className={`mode-toggle${spellcheck ? ' active' : ''}`}
+                title={spellcheck ? 'Hide spellcheck wavy lines (Ctrl+Shift+V)' : 'Show spellcheck wavy lines (Ctrl+Shift+V)'}
+                onClick={() => setSpellcheck((s) => !s)}
+              >
+                <Icon.spellcheck />
+                <span>{spellcheck ? 'Spellcheck: On' : 'Spellcheck: Off'}</span>
+              </button>
+              <button
                 className={`mode-toggle${markdownMode ? ' active' : ''}`}
                 title={markdownMode ? 'Switch to clean view (Ctrl+E)' : 'Switch to Markdown code (Ctrl+E)'}
                 onClick={() => setMarkdownMode((m) => !m)}
@@ -274,6 +291,7 @@ export default function App() {
               key={current.key}
               path={current.path}
               markdownMode={markdownMode}
+              spellcheck={spellcheck}
               onOpenTarget={openTarget}
               onOpenPath={(p) => openPath(p)}
               onRenamed={async (p) => { openPath(p, { keepKey: true }); await refreshTree(); }}
