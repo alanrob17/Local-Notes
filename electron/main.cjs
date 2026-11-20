@@ -253,15 +253,25 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'vault', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
 ]);
 
+function getAppIcon() {
+  for (const file of ['icon.ico', 'icon.png']) {
+    const p = path.join(__dirname, '..', 'build', file);
+    if (fs.existsSync(p)) return p;
+  }
+  return undefined;
+}
+
 function createWindow() {
   const dark = nativeTheme.shouldUseDarkColors;
   const isLinux = process.platform === 'linux';
+  const icon = getAppIcon();
   win = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 720,
     minHeight: 480,
     title: 'Local Notes',
+    ...(icon ? { icon } : {}),
     backgroundColor: dark ? '#191919' : '#ffffff',
     ...(isLinux
       ? { autoHideMenuBar: true }
